@@ -25,7 +25,7 @@ named!(
     comment_single_line<Span, Span>,
     preceded!(
         tag!(tokens::INLINE_COMMENT),
-        take_until_endline_and_consume!()
+        incomplete!(take_until_endline_and_consume!())
     )
 );
 
@@ -130,7 +130,7 @@ mod tests {
         let input = Span::new("/*foobar");
 
         assert_eq!(comment_delimited(input), Err(Error::Error(Context::Code(Span::new_at("foobar", 2, 1, 3), ErrorKind::Complete))));
-        assert_eq!(comment(input), Err(Error::Incomplete(Needed::Size(2))));
+        assert_eq!(comment(input), Err(Error::Error(Context::Code(Span::new_at("/*foobar", 0, 1, 1), ErrorKind::Alt))));
     }
 
 }

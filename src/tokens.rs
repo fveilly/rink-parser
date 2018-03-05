@@ -1,12 +1,4 @@
 /// Helper to declare a token.
-///
-/// ### Examples
-///
-/// The following example declares the `FOO_BAR` token:
-///
-/// ```
-/// token!(FOO_BAR: b"foobar"; "The `FOO_BAR` token, mostly used in example.");
-/// ```
 macro_rules! token {
     ($name:ident: $value:expr; $documentation:expr) => (
         #[doc=$documentation]

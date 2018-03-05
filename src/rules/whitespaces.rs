@@ -5,7 +5,7 @@ named_attr!(
         Recognize all whitespaces.
     "],
     pub whitespace<Span, Span>,
-    is_a!(" \t\n\r")
+    incomplete!(is_a!(" \t"))
 );
 
 #[cfg(test)]
@@ -35,41 +35,17 @@ mod tests {
     }
 
     #[test]
-    fn case_whitespace_carriage_return_line_feed() {
-        let input  = Span::new("\r\n\r\n\r\n");
-        let output = Ok((Span::new_at("", 6, 4, 1), input));
-
-        assert_eq!(whitespace(input), output);
-    }
-
-    #[test]
-    fn case_whitespace_carriage_return() {
-        let input  = Span::new("\r\r\r");
-        let output = Ok((Span::new_at("", 3, 1, 4), input));
-
-        assert_eq!(whitespace(input), output);
-    }
-
-    #[test]
-    fn case_whitespace_line_feed() {
-        let input  = Span::new("\n\n\n");
-        let output = Ok((Span::new_at("", 3, 4, 1), input));
-
-        assert_eq!(whitespace(input), output);
-    }
-
-    #[test]
     fn case_whitespace_mixed() {
-        let input  = Span::new("\n \n \r\t  \t\r\n\t \t\t");
-        let output = Ok((Span::new_at("", 15, 4, 5), input));
+        let input  = Span::new("    \t  \t\t \t\t");
+        let output = Ok((Span::new_at("", 12, 1, 13), input));
 
         assert_eq!(whitespace(input), output);
     }
 
     #[test]
     fn case_whitespace_with_a_tail() {
-        let input  = Span::new("\n \n \r\t  \t\r\n\t \t\tabc ");
-        let output = Ok((Span::new_at("abc ", 15, 4, 5), Span::new("\n \n \r\t  \t\r\n\t \t\t")));
+        let input  = Span::new("    \t  \t\t \t\tabc ");
+        let output = Ok((Span::new_at("abc ", 12, 1, 13), Span::new("    \t  \t\t \t\t")));
 
         assert_eq!(whitespace(input), output);
     }

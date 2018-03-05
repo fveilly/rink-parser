@@ -68,70 +68,68 @@ macro_rules! first(
     );
 );
 
-/// `take_until_eof_and_consume!(tag) => &[T] -> IResult<&[T], &[T]>`
-/// generates a parser consuming bytes until the specified byte sequence is found, and consumes it
-///
-/// Equivalent to nom take_until_and_consume!() macro but does not return Incomplete if eof is reached.
+/// replaces a `Incomplete` returned by the child parser
+/// with an `Ok`
 #[macro_export]
-macro_rules! take_until_eof_and_consume (
-  ($i:expr, $substr:expr) => (
-    {
-      use ::std::result::Result::*;
-      use ::std::option::Option::*;
-      use nom::{Err,Needed,IResult};
-      use nom::InputLength;
-      use nom::AtEof;
-      use nom::FindSubstring;
-      use nom::Slice;
+macro_rules! incomplete (
+    ($i:expr, $submac:ident!( $($args:tt)* )) => (
+        {
+            use ::std::result::Result::*;
+            use nom::{Err,ErrorKind};
+            use nom::InputLength;
+            use nom::Slice;
 
-      let input = $i;
-
-      let res: IResult<_,_> = match input.find_substring($substr) {
-        None => {
-            Ok(($i.slice($i.input_len()..), $i))
-        },
-        Some(index) => {
-          Ok(($i.slice(index+$substr.input_len()..), $i.slice(0..index)))
-        },
-      };
-      res
-    }
-  );
+            let i_ = $i.clone();
+            match $submac!(i_, $($args)*) {
+                Err(Err::Incomplete(_)) =>  {
+                    Ok(($i.slice($i.input_len()..), $i))
+                },
+                rest => rest
+            }
+        }
+    );
+    ($i:expr, $f:expr) => (
+        complete!($i, call!($f));
+    );
 );
 
 #[macro_export]
 macro_rules! take_until_endline_and_consume (
-  ($i:expr,) => (
-    {
-      use ::std::result::Result::*;
-      use ::std::option::Option::*;
-      use nom::{Err,Needed,IResult};
-      use nom::InputLength;
-      use nom::AtEof;
-      use nom::FindSubstring;
-      use nom::Slice;
+    ($i:expr,) => (
+        {
+            use ::std::result::Result::*;
+            use ::std::option::Option::*;
+            use nom::{Context,Err,ErrorKind,Needed,IResult};
+            use nom::InputLength;
+            use nom::AtEof;
+            use nom::FindSubstring;
+            use nom::Slice;
 
-      let input = $i;
-      let mut delimiter_size = 1;
+            let input = $i;
+            let mut delimiter_size = 1;
 
-      let res: IResult<_,_> = match input.find_substring('\n') {
-        None => {
-            Ok(($i.slice($i.input_len()..), $i))
-        },
-        Some(mut index) => {
-            if index != 0 {
-                if $i.as_slice().as_bytes()[index - 1] as char == '\r' {
-                    index -= 1;
-                    delimiter_size += 1;
-                }
-            }
+            let res: IResult<_,_> = match input.find_substring('\n') {
+                None => {
+                    if input.at_eof() {
+                        Err(Err::Error(Context::Code(input, ErrorKind::TakeUntilAndConsume::<u32>)))
+                    } else {
+                        Err(Err::Incomplete(Needed::Size(1)))
+                    }
+                },
+                Some(mut index) => {
+                    if index != 0 {
+                        if $i.as_slice().as_bytes()[index - 1] as char == '\r' {
+                            index -= 1;
+                            delimiter_size += 1;
+                        }
+                    }
 
-          Ok(($i.slice(index+delimiter_size..), $i.slice(0..index)))
-        },
-      };
-      res
-    }
-  );
+                    Ok(($i.slice(index+delimiter_size..), $i.slice(0..index)))
+                },
+            };
+            res
+        }
+    );
 );
 
 #[cfg(test)]
@@ -140,7 +138,7 @@ mod tests {
 
     named!(
         test_take_until_endline_and_consume<Span, Span>,
-        take_until_endline_and_consume!()
+        incomplete!(take_until_endline_and_consume!())
     );
 
     #[test]
