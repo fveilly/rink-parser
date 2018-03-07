@@ -287,13 +287,7 @@ impl_slice_for_range!(RangeFull);
 
 #[cfg(test)]
 mod tests {
-    use std::str;
     use super::Span;
-    use super::super::internal::{
-        Context,
-        Error,
-        ErrorKind
-    };
     use nom::{
         Compare,
         CompareResult,

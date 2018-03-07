@@ -7,7 +7,7 @@ macro_rules! skip_many0(
   ($i:expr, $submac:ident!( $($args:tt)* )) => (
     {
       use ::std::result::Result::*;
-      use nom::{Err,AtEof};
+      use nom::{Err,AtEof,ErrorKind};
 
       let ret;
       let mut input = $i.clone();
@@ -15,28 +15,28 @@ macro_rules! skip_many0(
       loop {
         let input_ = input.clone();
         match $submac!(input_, $($args)*) {
+          Ok((i, o))              => {
+            // loop trip must always consume (otherwise infinite loops)
+            if i == input {
+
+              if i.at_eof() {
+                ret = Ok((input, ()));
+              } else {
+                ret = Err(Err::Error(error_position!(input, ErrorKind::Many0)));
+              }
+              break;
+            }
+
+            input = i;
+          },
           Err(Err::Error(_))      => {
-            ret = Ok(input);
+            ret = Ok((input, ()));
             break;
           },
           Err(e) => {
             ret = Err(e);
             break;
           },
-          Ok(i)              => {
-            // Loop trip must always consume (otherwise infinite loops)
-            if i == input {
-
-              if i.at_eof() {
-                ret = Ok(input);
-              } else {
-                ret = Err(Err::Error(error_position!(input, nom::ErrorKind::Many0)));
-              }
-              break;
-            }
-
-            input = i;
-          }
         }
       }
 
