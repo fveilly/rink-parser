@@ -6,6 +6,7 @@ extern crate memchr;
 #[macro_use]
 pub mod macros;
 
+mod ast;
 mod tokens;
 mod rules;
 mod internal;

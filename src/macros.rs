@@ -1,4 +1,4 @@
-/// `skip_many0!(I -> IResult<I,O>) => I -> IResult<I,O>`
+/// `skip_many0!(I -> IResult<I,O>) => I -> IResult<I,()>`
 /// Applies the parser 0 or more times and discard the results
 ///
 /// The embedded parser may return Incomplete
@@ -75,7 +75,7 @@ macro_rules! incomplete (
     ($i:expr, $submac:ident!( $($args:tt)* )) => (
         {
             use ::std::result::Result::*;
-            use nom::{Err,ErrorKind};
+            use nom::Err;
             use nom::InputLength;
             use nom::Slice;
 
@@ -100,7 +100,6 @@ macro_rules! take_until_endline_and_consume (
             use ::std::result::Result::*;
             use ::std::option::Option::*;
             use nom::{Context,Err,ErrorKind,Needed,IResult};
-            use nom::InputLength;
             use nom::AtEof;
             use nom::FindSubstring;
             use nom::Slice;

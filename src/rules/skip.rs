@@ -32,6 +32,14 @@ mod tests {
     }
 
     #[test]
+    fn case_skip_single_line_comment() {
+        let input  = Span::new("// foo     \nhello");
+        let output = Ok((Span::new_at("hello", 12, 2, 1), ()));
+
+        assert_eq!(skip(input), output);
+    }
+
+    #[test]
     fn case_skip_whitespace() {
         let input  = Span::new("  	hello");
         let output = Ok((Span::new_at("hello", 3, 1, 4), ()));
