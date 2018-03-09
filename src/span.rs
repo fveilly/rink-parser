@@ -254,6 +254,14 @@ impl<'a> Compare<char> for Span<'a> {
     }
 }
 
+impl<'a> Offset for Span<'a> {
+    /// Offset between the first byte of self and the first byte of the argument
+    #[inline]
+    fn offset(&self, second: &Self) -> usize {
+        self.fragment.offset(second.as_slice())
+    }
+}
+
 macro_rules! impl_slice_for_range {
     ($range:ty) => (
         /// Implement a range from nom to be able to use the `Span`

@@ -51,8 +51,7 @@ pub fn is_binary_digit(chr: char) -> bool {
 }
 
 /// Recognizes one or more binary numerical characters
-pub fn binary_digit(input: Span) -> IResult<Span, Span>
-{
+pub fn binary_digit(input: Span) -> IResult<Span, Span> {
     use nom::{
         Err,
         ErrorKind,
@@ -81,8 +80,7 @@ pub fn binary_digit(input: Span) -> IResult<Span, Span>
 
 /// Recognizes one or more decimal characters. A decimal integer literal (base ten) begins with a digit
 /// other than 0 and consists of a sequence of decimal digits. 0 is considered as a decimal.
-pub fn decimal_digit(input: Span) -> IResult<Span, Span>
-{
+pub fn decimal_digit(input: Span) -> IResult<Span, Span> {
     use nom::{
         Err,
         ErrorKind,
@@ -111,6 +109,24 @@ pub fn decimal_digit(input: Span) -> IResult<Span, Span>
         }
     }
 
+}
+
+pub fn real_digit(input: Span) -> IResult<Span, Span> {
+    use nom::digit;
+
+    recognize!(input,
+        tuple!(
+            alt!(
+                value!((), tuple!(digit, opt!(pair!(char!('.'), opt!(digit)))))
+                | value!((), tuple!(char!('.'), digit))
+            ),
+            opt!(tuple!(
+                alt!(char!('e') | char!('E')),
+                opt!(alt!(char!('+') | char!('-'))),
+                digit
+            ))
+        )
+    )
 }
 
 named_attr!(
@@ -215,6 +231,27 @@ fn decimal_mapper(span: Span) -> StdResult<Literal, ParseFloatError> {
     )
 }
 
+named_attr!(
+    #[doc="
+        Recognize a real number.
+    "],
+    pub real<Span, Literal>,
+    map_res!(
+        call!(real_digit),
+        real_mapper
+    )
+);
+
+#[inline]
+fn real_mapper(span: Span) -> StdResult<Literal, ParseFloatError> {
+    f64::from_str(span.as_slice())
+        .and_then(
+            | decimal | {
+                Ok(Literal::Real(Token::new(decimal, span)))
+            }
+        )
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
@@ -222,7 +259,8 @@ mod tests {
         binary,
         hexadecimal,
         octal,
-        decimal
+        decimal,
+        real
     };
 
     use ast::ast::{
@@ -552,5 +590,144 @@ mod tests {
 
         assert_eq!(decimal(input), output);
         assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_real() {
+        let input  = Span::new("123.456e+78\n");
+        let output = Ok((
+            Span::new_at("\n", 11, 1, 12),
+            Literal::Real(Token::new(123.456e78f64, Span::new_at("123.456e+78", 0, 1, 1)))
+        ));
+
+        assert_eq!(real(input), output);
+    }
+
+    #[test]
+    fn case_real_only_with_rational_and_fractional_part() {
+        let input  = Span::new("0.456\n");
+        let output = Ok((
+            Span::new_at("\n", 5, 1, 6),
+            Literal::Real(Token::new(0.456f64, Span::new_at("0.456", 0, 1, 1)))
+        ));
+
+        assert_eq!(real(input), output);
+    }
+
+    #[test]
+    fn case_real_only_with_rational_part() {
+        let input  = Span::new("123.\n");
+        let output = Ok((
+            Span::new_at("\n", 4, 1, 5),
+            Literal::Real(Token::new(123.0f64, Span::new_at("123.", 0, 1, 1)))
+        ));
+
+        assert_eq!(real(input), output);
+    }
+
+    #[test]
+    fn case_real_only_with_fractional_part() {
+        let input  = Span::new(".456\n");
+        let output = Ok((
+            Span::new_at("\n", 4, 1, 5),
+            Literal::Real(Token::new(0.456f64, Span::new_at(".456", 0, 1, 1)))
+        ));
+
+        assert_eq!(real(input), output);
+    }
+
+    #[test]
+    fn case_real_only_with_rational_and_exponent_part_with_lowercase_e() {
+        let input  = Span::new("123.e78\n");
+        let output = Ok((
+            Span::new_at("\n", 7, 1, 8),
+            Literal::Real(Token::new(123e78f64, Span::new_at("123.e78", 0, 1, 1)))
+        ));
+
+        assert_eq!(real(input), output);
+    }
+
+    #[test]
+    fn case_real_only_with_integer_rational_and_exponent_part() {
+        let input  = Span::new("123e78\n");
+        let output = Ok((
+            Span::new_at("\n", 6, 1, 7),
+            Literal::Real(Token::new(123e78f64, Span::new_at("123e78", 0, 1, 1)))
+        ));
+
+        assert_eq!(real(input), output);
+    }
+
+    #[test]
+    fn case_real_only_with_rational_and_exponent_part_with_uppercase_e() {
+        let input  = Span::new("123.E78\n");
+        let output = Ok((
+            Span::new_at("\n", 7, 1, 8),
+            Literal::Real(Token::new(123e78f64, Span::new_at("123.E78", 0, 1, 1)))
+        ));
+
+        assert_eq!(real(input), output);
+    }
+
+    #[test]
+    fn case_real_only_with_rational_and_unsigned_exponent_part() {
+        let input  = Span::new("123.e78\n");
+        let output = Ok((
+            Span::new_at("\n", 7, 1, 8),
+            Literal::Real(Token::new(123e78f64, Span::new_at("123.e78", 0, 1, 1)))
+        ));
+
+        assert_eq!(real(input), output);
+    }
+
+    #[test]
+    fn case_real_only_with_rational_and_positive_exponent_part() {
+        let input  = Span::new("123.e+78\n");
+        let output = Ok((
+            Span::new_at("\n", 8, 1, 9),
+            Literal::Real(Token::new(123e78f64, Span::new_at("123.e+78", 0, 1, 1)))
+        ));
+
+        assert_eq!(real(input), output);
+    }
+
+    #[test]
+    fn case_real_only_with_rational_and_negative_exponent_part() {
+        let input  = Span::new("123.e-78\n");
+        let output = Ok((
+            Span::new_at("\n", 8, 1, 9),
+            Literal::Real(Token::new(123e-78f64, Span::new_at("123.e-78", 0, 1, 1)))
+        ));
+
+        assert_eq!(real(input), output);
+    }
+
+    #[test]
+    fn case_real_only_with_rational_and_negative_zero_exponent_part() {
+        let input  = Span::new("123.e-0\n");
+        let output = Ok((
+            Span::new_at("\n", 7, 1, 8),
+            Literal::Real(Token::new(123f64, Span::new_at("123.e-0", 0, 1, 1)))
+        ));
+
+        assert_eq!(real(input), output);
+    }
+
+    #[test]
+    fn case_real_missing_exponent_part() {
+        let input  = Span::new(".7e\n");
+        let output = Ok((
+            Span::new_at("e\n", 2, 1, 3),
+            Literal::Real(Token::new(0.7f64, Span::new(".7")))
+        ));
+
+        assert_eq!(real(input), output);
+    }
+
+    #[test]
+    fn case_invalid_real_only_the_dot() {
+        let input = Span::new(".\n");
+
+        assert_eq!(real(input), Err(Error::Error(Context::Code(input, ErrorKind::Alt))));
     }
 }
