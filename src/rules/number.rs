@@ -14,6 +14,9 @@ use std::num::{
     ParseIntError
 };
 
+use std::str::FromStr;
+use std::str;
+
 use nom::{
     InputIter,
     InputLength,
@@ -21,7 +24,11 @@ use nom::{
     IResult,
     AsChar,
     AtEof,
-    hex_digit
+    Compare,
+    CompareResult,
+    hex_digit,
+    oct_digit,
+    is_digit
 };
 
 named_attr!(
@@ -33,8 +40,8 @@ named_attr!(
     alt_complete!(
         binary
         | hexadecimal
-      /*| decimal
-      | octal*/
+        | decimal
+        | octal
     )
 );
 
@@ -72,10 +79,43 @@ pub fn binary_digit(input: Span) -> IResult<Span, Span>
     }
 }
 
+/// Recognizes one or more decimal characters. A decimal integer literal (base ten) begins with a digit
+/// other than 0 and consists of a sequence of decimal digits. 0 is considered as a decimal.
+pub fn decimal_digit(input: Span) -> IResult<Span, Span>
+{
+    use nom::{
+        Err,
+        ErrorKind,
+        Needed
+    };
+
+    match input.position(|item| !item.is_dec_digit()) {
+        Some(0) => Err(Err::Error(error_position!(input, ErrorKind::Digit))),
+        Some(1) => Ok((input.slice(1..), input.slice(..1))),
+        Some(n) => {
+            match input.compare('0') {
+                CompareResult::Error => { Ok((input.slice(n..), input.slice(..n))) },
+                _ => { Err(Err::Error(error_position!(input, ErrorKind::Digit))) }
+            }
+        },
+        None => {
+            if input.at_eof() {
+                if input.input_len() > 0 {
+                    Ok((input.slice(input.input_len()..), input))
+                } else {
+                    Err(Err::Error(error_position!(input, ErrorKind::Digit)))
+                }
+            } else {
+                Err(Err::Incomplete(Needed::Size(1)))
+            }
+        }
+    }
+
+}
+
 named_attr!(
     #[doc="
         Recognize an integer with the binary notation.
-        # Examples
     "],
     pub binary<Span, Literal>,
     map_res!(
@@ -100,7 +140,6 @@ fn binary_mapper(span: Span) -> StdResult<Literal, ParseIntError> {
 named_attr!(
     #[doc="
         Recognize an integer with the hexadecimal notation.
-        # Examples
     "],
     pub hexadecimal<Span, Literal>,
     map_res!(
@@ -122,12 +161,68 @@ fn hexadecimal_mapper(span: Span) -> StdResult<Literal, ParseIntError> {
         )
 }
 
+named_attr!(
+    #[doc="
+        Recognize an integer with the octal notation.
+    "],
+    pub octal<Span, Literal>,
+    map_res!(
+        preceded!(
+            tag!("0"),
+            call!(oct_digit)
+        ),
+        octal_mapper
+    )
+);
+
+#[inline]
+fn octal_mapper(span: Span) -> StdResult<Literal, ParseIntError> {
+    i64::from_str_radix(span.as_slice(), 8)
+        .and_then(
+            | octal| {
+                Ok(Literal::Integer(Token::new(octal, span)))
+            }
+        )
+}
+
+named_attr!(
+    #[doc="
+        Recognize an integer with the decimal notation.
+    "],
+    pub decimal<Span, Literal>,
+    map_res!(
+        call!(decimal_digit),
+        decimal_mapper
+    )
+);
+
+#[inline]
+fn decimal_mapper(span: Span) -> StdResult<Literal, ParseFloatError> {
+    i64::from_str(span.as_slice())
+        .and_then(
+            | decimal| {
+                Ok(Literal::Integer(Token::new(decimal, span)))
+            }
+        ).or_else(
+            |_: ParseIntError| {
+                f64::from_str(span.as_slice())
+                    .and_then(
+                        | decimal | {
+                            Ok(Literal::Real(Token::new(decimal, span)))
+                        }
+                    )
+            }
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
         integer,
         binary,
-        hexadecimal
+        hexadecimal,
+        octal,
+        decimal
     };
 
     use ast::ast::{
@@ -173,26 +268,38 @@ mod tests {
     #[test]
     fn case_invalid_binary_overflow() {
         let input  = Span::new("0b1000000000000000000000000000000000000000000000000000000000000000\n");
+        let output = Ok((
+            Span::new_at("b1000000000000000000000000000000000000000000000000000000000000000\n", 1, 1, 2),
+            Literal::Integer(Token::new(0i64, Span::new("0")))
+        ));
 
         assert_eq!(binary(input), Err(Error::Error(Context::Code(input, ErrorKind::MapRes))));
-        assert_eq!(integer(input),  Err(Error::Error(Context::Code(input, ErrorKind::Alt))));
+        assert_eq!(integer(input),  output);
     }
 
     #[test]
     fn case_invalid_binary_no_number() {
         let input  = Span::new("0b\n");
-        let output = Span::new_at("\n", 2, 1, 3);
+        let output =  Ok((
+            Span::new_at("b\n", 1, 1, 2),
+            Literal::Integer(Token::new(0, Span::new_at("0", 0, 1, 1)))
+        ));
 
-        assert_eq!(binary(input), Err(Error::Error(Context::Code(output, ErrorKind::Custom(ErrorKindExtension::BinaryDigit as u32)))));
-        assert_eq!(integer(input), Err(Error::Error(Context::Code(input, ErrorKind::Alt))));
+        assert_eq!(binary(input), Err(Error::Error(Context::Code( Span::new_at("\n", 2, 1, 3),
+                                                                  ErrorKind::Custom(ErrorKindExtension::BinaryDigit as u32)))));
+        assert_eq!(integer(input), output);
     }
 
     #[test]
     fn case_invalid_binary_not_starting_by_zero_b() {
         let input  = Span::new("1\n");
+        let output =  Ok((
+            Span::new_at("\n", 1, 1, 2),
+            Literal::Integer(Token::new(1, Span::new_at("1", 0, 1, 1)))
+        ));
 
         assert_eq!(binary(input), Err(Error::Error(Context::Code(input, ErrorKind::Tag))));
-        assert_eq!(integer(input), Err(Error::Error(Context::Code(input, ErrorKind::Alt))));
+        assert_eq!(integer(input), output);
     }
 
     #[test]
@@ -234,19 +341,27 @@ mod tests {
     #[test]
     fn case_invalid_hexadecimal_no_number() {
         let input  = Span::new("0x\n");
+        let output = Ok((
+            Span::new_at("x\n", 1, 1, 2),
+            Literal::Integer(Token::new(0, Span::new_at("0", 0, 1, 1)))
+        ));
 
         assert_eq!(hexadecimal(input), Err(Error::Error(Context::Code(Span::new_at("\n", 2, 1, 3),
                                                                       ErrorKind::HexDigit))));
-        assert_eq!(integer(input), Err(Error::Error(Context::Code(input, ErrorKind::Alt))));
+        assert_eq!(integer(input), output);
     }
 
     #[test]
     fn case_invalid_hexadecimal_not_in_base() {
         let input  = Span::new("0xg");
+        let output = Ok((
+            Span::new_at("xg", 1, 1, 2),
+            Literal::Integer(Token::new(0, Span::new_at("0", 0, 1, 1)))
+        ));
 
         assert_eq!(hexadecimal(input), Err(Error::Error(Context::Code(Span::new_at("g", 2, 1, 3),
                                                                       ErrorKind::HexDigit))));
-        assert_eq!(integer(input), Err(Error::Error(Context::Code(input, ErrorKind::Alt))));
+        assert_eq!(integer(input), output);
     }
 
     #[test]
@@ -264,8 +379,178 @@ mod tests {
     #[test]
     fn case_invalid_hexadecimal_overflow() {
         let input  = Span::new("0x8000000000000000\n");
+        let output = Ok((
+            Span::new_at("x8000000000000000\n", 1, 1, 2),
+            Literal::Integer(Token::new(0, Span::new_at("0", 0, 1, 1)))
+        ));
 
         assert_eq!(hexadecimal(input), Err(Error::Error(Context::Code(input, ErrorKind::MapRes))));
-        assert_eq!(integer(input), Err(Error::Error(Context::Code(input, ErrorKind::Alt))));
+        assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_octal() {
+        let input  = Span::new("052\n");
+        let output = Ok((
+            Span::new_at("\n", 3, 1, 4),
+            Literal::Integer(Token::new(42i64, Span::new_at("52", 1, 1, 2)))
+        ));
+
+        assert_eq!(octal(input), output);
+        assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_octal_zero() {
+        let input  = Span::new("0\n");
+        let output = Ok((
+            Span::new_at("\n", 1, 1, 2),
+            Literal::Integer(Token::new(0i64, Span::new_at("0", 0, 1, 1)))
+        ));
+
+        assert_eq!(octal(input), Err(Error::Error(Context::Code(Span::new_at("\n", 1, 1, 2),
+                                                                ErrorKind::OctDigit))));
+        assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_octal_maximum_integer_value() {
+        let input  = Span::new("0777777777777777777777\n");
+        let output = Ok((
+            Span::new_at("\n", 22, 1, 23),
+            Literal::Integer(Token::new(::std::i64::MAX, Span::new_at("777777777777777777777", 1, 1, 2)))
+        ));
+
+        assert_eq!(octal(input), output);
+        assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_invalid_octal_overflow() {
+        let input  = Span::new("01000000000000000000000\n");
+        let output = Err(Error::Error(Context::Code(input, ErrorKind::Alt)));
+
+        assert_eq!(octal(input), Err(Error::Error(Context::Code(input, ErrorKind::MapRes))));
+        assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_invalid_octal_not_starting_by_zero() {
+        let input  = Span::new("7\n");
+        let output = Ok((
+            Span::new_at("\n", 1, 1, 2),
+            Literal::Integer(Token::new(7i64, Span::new_at("7", 0, 1, 1)))
+        ));
+
+        assert_eq!(octal(input), Err(Error::Error(Context::Code(input, ErrorKind::Tag))));
+        assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_invalid_octal_not_in_base() {
+        let input  = Span::new("8\n");
+        let output = Ok((
+            Span::new_at("\n", 1, 1, 2),
+            Literal::Integer(Token::new(8i64, Span::new_at("8", 0, 1, 1)))
+        ));
+
+        assert_eq!(octal(input), Err(Error::Error(Context::Code(input, ErrorKind::Tag))));
+        assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_decimal_one_digit() {
+        let input  = Span::new("7\n");
+        let output = Ok((
+            Span::new_at("\n", 1, 1, 2),
+            Literal::Integer(Token::new(7i64, Span::new_at("7", 0, 1, 1)))
+        ));
+
+        assert_eq!(decimal(input), output);
+        assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_decimal_many_digits() {
+        let input  = Span::new("42\n");
+        let output = Ok((
+            Span::new_at("\n", 2, 1, 3),
+            Literal::Integer(Token::new(42i64, Span::new_at("42", 0, 1, 1)))
+        ));
+
+        assert_eq!(decimal(input), output);
+        assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_decimal_zero() {
+        let input  = Span::new("0\n");
+        let output = Ok((
+            Span::new_at("\n", 1, 1, 2),
+            Literal::Integer(Token::new(0i64, Span::new_at("0", 0, 1, 1)))
+        ));
+
+        assert_eq!(decimal(input), output);
+        assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_decimal_plus() {
+        let input  = Span::new("42+");
+        let output = Ok((
+            Span::new_at("+", 2, 1, 3),
+            Literal::Integer(Token::new(42i64, Span::new("42")))
+        ));
+
+        assert_eq!(decimal(input), output);
+        assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_decimal_maximum_integer_value() {
+        let input  = Span::new("9223372036854775807\n");
+        let output = Ok((
+            Span::new_at("\n", 19, 1, 20),
+            Literal::Integer(Token::new(::std::i64::MAX, Span::new_at("9223372036854775807", 0, 1, 1)))
+        ));
+
+        assert_eq!(decimal(input), output);
+        assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_decimal_overflow_to_real() {
+        let input  = Span::new("9223372036854775808\n");
+        let output = Ok((
+            Span::new_at("\n", 19, 1, 20),
+            Literal::Real(Token::new(9223372036854775808f64, Span::new_at("9223372036854775808", 0, 1, 1)))
+        ));
+
+        assert_eq!(decimal(input), output);
+        assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_decimal_maximum_real_value() {
+        let input  = Span::new("179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\n");
+        let output = Ok((
+            Span::new_at("\n", 309, 1, 310),
+            Literal::Real(Token::new(::std::f64::MAX, Span::new_at("179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", 0, 1, 1)))
+        ));
+
+        assert_eq!(decimal(input), output);
+        assert_eq!(integer(input), output);
+    }
+
+    #[test]
+    fn case_invalid_decimal_overflow_to_infinity() {
+        let input  = Span::new("1797693134862315700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\n");
+        let output = Ok((
+            Span::new_at("\n", 310, 1, 311),
+            Literal::Real(Token::new(::std::f64::INFINITY, Span::new_at("1797693134862315700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", 0, 1, 1)))
+        ));
+
+        assert_eq!(decimal(input), output);
+        assert_eq!(integer(input), output);
     }
 }

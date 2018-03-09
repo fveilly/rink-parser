@@ -12,6 +12,7 @@ use nom::{
 
 use std::str::Chars;
 use std::str::CharIndices;
+use std::cmp::Ordering;
 
 use std::ops::{
     Range,
@@ -220,6 +221,36 @@ impl<'a, 'b> Compare<&'b str> for Span<'a> {
     #[inline]
     fn compare_no_case(&self, element: &'b str) -> CompareResult {
         self.fragment.compare_no_case(element)
+    }
+}
+
+impl<'a> Compare<char> for Span<'a> {
+    /// Compare self to another input for equality.
+    fn compare(&self, c: char) -> CompareResult {
+        match self.fragment.chars().nth(0) {
+            Some(first_char) => {
+                if first_char == c {
+                    CompareResult::Ok
+                } else {
+                    CompareResult::Error
+                }
+            }
+            None => { CompareResult::Error }
+        }
+    }
+
+    /// Compare self to another input for equality independently of the case.
+    fn compare_no_case(&self, c: char) -> CompareResult {
+        match self.fragment.chars().nth(0) {
+            Some(first_char) => {
+                if first_char.to_lowercase().cmp(c.to_lowercase()) == Ordering::Equal {
+                    CompareResult::Ok
+                } else {
+                    CompareResult::Error
+                }
+            }
+            None => { CompareResult::Error }
+        }
     }
 }
 

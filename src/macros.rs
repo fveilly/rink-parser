@@ -68,8 +68,7 @@ macro_rules! first(
     );
 );
 
-/// replaces a `Incomplete` returned by the child parser
-/// with an `Ok`
+/// Replaces a `Incomplete` returned by the child parser with an `Ok`
 #[macro_export]
 macro_rules! incomplete (
     ($i:expr, $submac:ident!( $($args:tt)* )) => (
@@ -89,7 +88,7 @@ macro_rules! incomplete (
         }
     );
     ($i:expr, $f:expr) => (
-        complete!($i, call!($f));
+        incomplete!($i, call!($f));
     );
 );
 
