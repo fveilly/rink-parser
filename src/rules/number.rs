@@ -14,7 +14,10 @@ use std::num::{
     ParseIntError
 };
 
-use std::str::FromStr;
+use std::str::{
+    FromStr,
+    ParseBoolError
+};
 use std::str;
 
 use nom::{
@@ -28,8 +31,22 @@ use nom::{
     CompareResult,
     hex_digit,
     oct_digit,
-    is_digit
+    is_digit,
+    digit
 };
+
+named_attr!(
+    #[doc="
+        Recognize a number.
+        A number is either a boolean, an integer or a real.
+    "],
+    pub number<Span, Literal>,
+    alt!(
+        boolean
+        | real
+        | integer
+    )
+);
 
 named_attr!(
     #[doc="
@@ -111,20 +128,32 @@ pub fn decimal_digit(input: Span) -> IResult<Span, Span> {
 
 }
 
+named_attr!(
+    #[doc="
+        Recognize an exponential notation.
+    "],
+    pub exponential<Span, Span>,
+    recognize!(
+        tuple!(
+            alt!(char!('e') | char!('E')),
+            opt!(alt!(char!('+') | char!('-'))),
+            digit
+        )
+    )
+);
+
+/// Recognizes a real digit. Can be one of these forms.
+/// [0-9]*\.[0-9]+([eE][+-]?[0-9]+)?
+/// [0-9]+\.([eE][+-]?[0-9]+)?
+/// [0-9]+[eE][+-]?[0-9]+)
 pub fn real_digit(input: Span) -> IResult<Span, Span> {
     use nom::digit;
 
     recognize!(input,
-        tuple!(
-            alt!(
-                value!((), tuple!(digit, opt!(pair!(char!('.'), opt!(digit)))))
-                | value!((), tuple!(char!('.'), digit))
-            ),
-            opt!(tuple!(
-                alt!(char!('e') | char!('E')),
-                opt!(alt!(char!('+') | char!('-'))),
-                digit
-            ))
+        alt!(
+            value!((), tuple!(opt!(digit), char!('.'), digit, opt!(exponential)))
+            | value!((), tuple!(digit, char!('.'), opt!(exponential)))
+            | value!((), tuple!(digit, exponential))
         )
     )
 }
@@ -252,6 +281,29 @@ fn real_mapper(span: Span) -> StdResult<Literal, ParseFloatError> {
         )
 }
 
+named_attr!(
+    #[doc="
+        Recognize a boolean.
+    "],
+    pub boolean<Span, Literal>,
+    map_res!(
+        recognize!(
+            alt!(tag!("true") | tag!("false"))
+        ),
+        boolean_mapper
+    )
+);
+
+#[inline]
+fn boolean_mapper(span: Span) -> StdResult<Literal, ParseBoolError> {
+    bool::from_str(span.as_slice())
+        .and_then(
+            | boolean | {
+                Ok(Literal::Boolean(Token::new(boolean, span)))
+            }
+        )
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
@@ -260,7 +312,8 @@ mod tests {
         hexadecimal,
         octal,
         decimal,
-        real
+        real,
+        boolean
     };
 
     use ast::ast::{
@@ -729,5 +782,27 @@ mod tests {
         let input = Span::new(".\n");
 
         assert_eq!(real(input), Err(Error::Error(Context::Code(input, ErrorKind::Alt))));
+    }
+
+    #[test]
+    fn case_boolean_true() {
+        let input  = Span::new("true\n");
+        let output = Ok((
+            Span::new_at("\n", 4, 1, 5),
+            Literal::Boolean(Token::new(true, Span::new_at("true", 0, 1, 1)))
+        ));
+
+        assert_eq!(boolean(input), output);
+    }
+
+    #[test]
+    fn case_boolean_false() {
+        let input  = Span::new("false\n");
+        let output = Ok((
+            Span::new_at("\n", 5, 1, 6),
+            Literal::Boolean(Token::new(false, Span::new_at("false", 0, 1, 1)))
+        ));
+
+        assert_eq!(boolean(input), output);
     }
 }

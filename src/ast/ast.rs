@@ -22,11 +22,14 @@ impl<'a, T> Token<'a, T> {
 /// A literal represents a fixed value, aka an atom.
 #[derive(Debug, PartialEq)]
 pub enum Literal<'a> {
-    /// An integer, for instance a binary, octal, decimal or hexadecimal number.
+    /// An integer (eg. a binary, octal, decimal or hexadecimal number).
     Integer(Token<'a, i64>),
 
-    /// A real, for instance an exponential number.
+    /// A real (eg. an exponential number).
     Real(Token<'a, f64>),
+
+    /// A boolean.
+    Boolean(Token<'a, bool>),
 
     /// A string.
     String(Token<'a, String>)
