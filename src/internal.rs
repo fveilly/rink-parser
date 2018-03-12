@@ -17,28 +17,26 @@ use std::num;
 
 #[derive(Debug,PartialEq,Eq,Hash,Clone)]
 pub enum ErrorKindExtension {
-    BinaryDigit
-}
+    BinaryDigit,
 
-pub fn error_to_u32(e: &ErrorKindExtension) -> u32 {
-    match *e {
-        ErrorKindExtension::BinaryDigit                 => 0
-    }
+    /// The datum starts as a string but is too short to be a string.
+    StringTooShort,
+
+    /// The string open character is not correct.
+    StringInvalidOpeningCharacter,
+
+    /// The string is not correctly encoded (expect UTF-8).
+    StringInvalidEncoding,
+
 }
 
 impl ErrorKindExtension {
     pub fn description(&self) -> &str {
         match *self {
-            ErrorKindExtension::BinaryDigit             => "Hexadecimal Digit"
-        }
-
-    }
-}
-
-impl From<ErrorKindExtension> for u32 {
-    fn from(e: ErrorKindExtension) -> Self {
-        match e {
-            ErrorKindExtension::BinaryDigit             => 0
+            ErrorKindExtension::BinaryDigit                         => "Binary digit",
+            ErrorKindExtension::StringTooShort                      => "String too short",
+            ErrorKindExtension::StringInvalidOpeningCharacter       => "String invalid opening character",
+            ErrorKindExtension::StringInvalidEncoding               => "String invalid encoding",
         }
     }
 }

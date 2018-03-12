@@ -74,6 +74,16 @@ mod tests {
     }
 
     #[test]
+    fn case_literal_decimal() {
+        let input  = Span::new("78557\n");
+
+        assert_eq!(literal(input), Ok((
+            Span::new_at("\n", 5, 1, 6),
+            Literal::Integer(Token::new(78557i64, Span::new_at("78557", 0, 1, 1)))
+        )));
+    }
+
+    #[test]
     fn case_literal_real() {
         let input  = Span::new("1.6180339887498948482\n");
         let value = ‎1.6180339887498948482f64;
