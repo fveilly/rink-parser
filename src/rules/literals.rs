@@ -1,4 +1,5 @@
 use super::number::number;
+use super::string::string;
 
 use ast::ast::Literal;
 use span::Span;
@@ -11,7 +12,7 @@ named_attr!(
     pub literal<Span, Literal>,
     alt!(
         number
-      //| string
+        | string
     )
 );
 
@@ -91,6 +92,16 @@ mod tests {
         assert_eq!(literal(input), Ok((
             Span::new_at("\n", 21, 1, 22),
             Literal::Real(Token::new(value, Span::new_at("1.6180339887498948482", 0, 1, 1)))
+        )));
+    }
+
+    #[test]
+    fn case_literal_string() {
+        let input  = Span::new("\"Lorem ipsum dolor sit amet, nulla vel, vel quis pellentesque\"");
+
+        assert_eq!(literal(input), Ok((
+            Span::new_at("", 62, 1, 63),
+            Literal::String(Token::new("Lorem ipsum dolor sit amet, nulla vel, vel quis pellentesque".to_string(), input))
         )));
     }
 }
