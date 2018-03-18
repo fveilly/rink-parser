@@ -7,8 +7,6 @@ use span::Span;
 use internal::ErrorKindExtension;
 
 use nom::{
-    InputIter,
-    InputLength,
     Slice,
     IResult
 };
@@ -26,7 +24,7 @@ pub fn string(span: Span) -> IResult<Span, Literal> {
     let mut iterator= input.char_indices();
 
     match iterator.next() {
-        Some((index, item)) => {
+        Some((_, item)) => {
             if item != '"' {
                 return Err(Err::Error(Context::Code(span, ErrorKind::Custom(ErrorKindExtension::StringInvalidOpeningCharacter as u32))));
             }

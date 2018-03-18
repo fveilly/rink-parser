@@ -13,8 +13,6 @@ pub use nom::Context;
 /// Contain information on needed data if a parser_old returned `Incomplete`.
 pub use nom::Needed;
 
-use std::num;
-
 #[derive(Debug,PartialEq,Eq,Hash,Clone)]
 pub enum ErrorKindExtension {
     BinaryDigit,

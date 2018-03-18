@@ -7,7 +7,6 @@ use span::Span;
 use internal::ErrorKindExtension;
 
 use std::result::Result as StdResult;
-use std::ops::{Range, RangeFrom, RangeTo};
 
 use std::num::{
     ParseFloatError,
@@ -18,7 +17,6 @@ use std::str::{
     FromStr,
     ParseBoolError
 };
-use std::str;
 
 use nom::{
     InputIter,
@@ -31,7 +29,6 @@ use nom::{
     CompareResult,
     hex_digit,
     oct_digit,
-    is_digit,
     digit
 };
 

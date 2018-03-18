@@ -15,7 +15,7 @@ macro_rules! skip_many0(
       loop {
         let input_ = input.clone();
         match $submac!(input_, $($args)*) {
-          Ok((i, o))              => {
+          Ok((i, _))              => {
             // loop trip must always consume (otherwise infinite loops)
             if i == input {
 
