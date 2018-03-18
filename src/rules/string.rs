@@ -13,27 +13,6 @@ use nom::{
     IResult
 };
 
-/*named_attr!(
-    #[doc="
-        Recognize all kind of strings.
-    "],
-    pub string<Span, Literal>,
-    map!(
-        escaped!(delimited!(
-            tag!("\""),
-            //escaped!(take_until!("\""), "\\", one_of!("\"n\\")),
-            take_until!("\""),
-            tag!("\"")
-        ), "\\", one_of!("\"n\\")),
-        string_mapper
-    )
-);
-
-#[inline]
-fn string_mapper(span: Span) -> Literal {
-    Literal::String(Token::new(span.as_slice().to_string(), span))
-}*/
-
 /// Recognize a string.
 pub fn string(span: Span) -> IResult<Span, Literal> {
     use nom::{
@@ -44,11 +23,11 @@ pub fn string(span: Span) -> IResult<Span, Literal> {
     };
 
     let input= span.as_slice();
-    let mut iterator= input.chars().enumerate();
+    let mut iterator= input.char_indices();
 
     match iterator.next() {
         Some((index, item)) => {
-            if item != '\"' {
+            if item != '"' {
                 return Err(Err::Error(Context::Code(span, ErrorKind::Custom(ErrorKindExtension::StringInvalidOpeningCharacter as u32))));
             }
         },
@@ -64,18 +43,16 @@ pub fn string(span: Span) -> IResult<Span, Literal> {
             if let Some((next_index, next_item)) = iterator.next() {
                 range = offset..index;
 
-                if next_item == '"' || next_item == '\\' {
-                    if let None = output {
-                        let mut data = (&input[range]).to_string();
-                        data.push(next_item);
-                        output = Some(data);
-                    } else if let Some(data) = output.as_mut() {
-                        data.push_str(&input[range]);
-                        data.push(next_item);
-                    }
-
-                    offset = next_index + 1;
+                if let None = output {
+                    let mut data = (&input[range]).to_string();
+                    data.push(next_item);
+                    output = Some(data);
+                } else if let Some(data) = output.as_mut() {
+                    data.push_str(&input[range]);
+                    data.push(next_item);
                 }
+
+                offset = next_index + 1;
             } else {
                 return Err(Err::Incomplete(Needed::Size(1)));
             }
@@ -160,7 +137,7 @@ mod tests {
             Span::new_at("tail", 15, 1, 16),
             Literal::String(
                 Token::new(
-                    "\"f\\oo\\bar\\".to_string(),
+                    "\"foo\\bar\\".to_string(),
                     Span::new("\"\\\"f\\oo\\\\bar\\\\\"")
                 )
             )
@@ -218,22 +195,53 @@ mod tests {
         assert_eq!(string(input), output);
     }
 
-    /// TODO: Add support for unicode strings
-    /*#[test]
-    fn case_string_unicode() {
-        let input  = Span::new("\"応なイ合量ムセウ仲文よどをき右身ヒ名抗そみと大装ノ\"");
+    #[test]
+    fn case_string_utf8_japanese() {
+        let input  = Span::new("\"出テル村七らぐし鏡始ヤユ権連ふこ応法マチスイ忽引コマヱシ際31意団ナ割平と上内すめリ気両え検抜爆じずラ。経イフシ兄町ユフヤ造審くー集57事め東福オセ会爆レコラハ健投ケ尾2連製テオロコ結踊ホヌラヘ購最や話催俊ち疑質メ都能坂居にぜ。南ば続壮ス韓再いき揃問業りぱ氷3連乗ぶあょ属保しぶ意者ル功並ょ末手第場ケサ教施セヤ式5幹回ッみぽ娘公賀待種男のせぽ\"");
         let output = Ok((
-            Span::new_at("", 2, 1, 3),
+            Span::new_at("", 501, 1, 502),
             Literal::String(
                 Token::new(
-                    "応なイ合量ムセウ仲文よどをき右身ヒ名抗そみと大装ノ".to_string(),
+                    "出テル村七らぐし鏡始ヤユ権連ふこ応法マチスイ忽引コマヱシ際31意団ナ割平と上内すめリ気両え検抜爆じずラ。経イフシ兄町ユフヤ造審くー集57事め東福オセ会爆レコラハ健投ケ尾2連製テオロコ結踊ホヌラヘ購最や話催俊ち疑質メ都能坂居にぜ。南ば続壮ス韓再いき揃問業りぱ氷3連乗ぶあょ属保しぶ意者ル功並ょ末手第場ケサ教施セヤ式5幹回ッみぽ娘公賀待種男のせぽ".to_string(),
                     input
                 )
             )
         ));
 
         assert_eq!(string(input), output);
-    }*/
+    }
+
+    #[test]
+    fn case_string_utf8_russian() {
+        let input  = Span::new("\"Лорем ипсум долор сит амет, еи вис хабео мутат, меа децоре десеруиссе ут, лорем интеллегат вим ан. Еа цивибус епицуреи атоморум вис, семпер ессент интегре иус ад. Еи вих регионе сцрипсерит. Но сеа ерат маиестатис, ерипуит детрахит ат нам, ад цонгуе волуптуа медиоцрем при\"");
+        let output = Ok((
+            Span::new_at("", 492, 1, 493),
+            Literal::String(
+                Token::new(
+                    "Лорем ипсум долор сит амет, еи вис хабео мутат, меа децоре десеруиссе ут, лорем интеллегат вим ан. Еа цивибус епицуреи атоморум вис, семпер ессент интегре иус ад. Еи вих регионе сцрипсерит. Но сеа ерат маиестатис, ерипуит детрахит ат нам, ад цонгуе волуптуа медиоцрем при".to_string(),
+                    input
+                )
+            )
+        ));
+
+        assert_eq!(string(input), output);
+    }
+
+    #[test]
+    fn case_string_utf8_greek() {
+        let input  = Span::new("\"Λορεμ ιπσθμ δολορ σιτ αμετ, ει σιτ ινvιδθντ εθριπιδισ ινcορρθπτε. Σεα αδ διcατ δολορ, εαμ cομμοδο νθσqθαμ σιγνιφερθμqθε εα. Μολλισ σινγθλισ ατ μει. Ερρορ δισσεντιθντ εξ μεα, θτ vισ ηινc vιδε, τε vελ πρινcιπεσ σcριπσεριτ. Αδ εαμ λθcιλιθσ παρτιενδο ιμπερδιετ, qθο πθτεντ τιμεαμ ετ\"");
+        let output = Ok((
+            Span::new_at("", 492, 1, 493),
+            Literal::String(
+                Token::new(
+                    "Λορεμ ιπσθμ δολορ σιτ αμετ, ει σιτ ινvιδθντ εθριπιδισ ινcορρθπτε. Σεα αδ διcατ δολορ, εαμ cομμοδο νθσqθαμ σιγνιφερθμqθε εα. Μολλισ σινγθλισ ατ μει. Ερρορ δισσεντιθντ εξ μεα, θτ vισ ηινc vιδε, τε vελ πρινcιπεσ σcριπσεριτ. Αδ εαμ λθcιλιθσ παρτιενδο ιμπερδιετ, qθο πθτεντ τιμεαμ ετ".to_string(),
+                    input
+                )
+            )
+        ));
+
+        assert_eq!(string(input), output);
+    }
 
     #[test]
     fn case_string_long() {
