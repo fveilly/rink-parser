@@ -6,8 +6,14 @@ use nom::{
     InputIter,
     InputLength,
     InputTake,
+    InputTakeAtPosition,
     Offset,
-    Slice
+    Slice,
+    Err,
+    ErrorKind,
+    Needed,
+    Context,
+    IResult
 };
 
 use std::str::Chars;
@@ -107,6 +113,32 @@ impl<'a> InputTake for Span<'a> {
     fn take_split(&self, count: usize) -> (Self, Self)
     {
         (self.slice(count..), self.slice(..count))
+    }
+}
+
+/// Implement `InputTakeAtPosition` from nom to be able to use the `Span`
+impl<'a> InputTakeAtPosition for Span<'a> {
+    type Item = char;
+
+    fn split_at_position<P>(&self, predicate: P) -> IResult<Self, Self, u32>
+        where
+            P: Fn(Self::Item) -> bool,
+    {
+        match self.fragment.char_indices().find(|&(_, c)| predicate(c)) {
+            Some((i,_)) => Ok((self.slice(i..), self.slice(..i))),
+            None        => Err(Err::Incomplete(Needed::Size(1)))
+        }
+    }
+
+    fn split_at_position1<P>(&self, predicate: P, e: ErrorKind<u32>) -> IResult<Self, Self, u32>
+        where
+            P: Fn(Self::Item) -> bool,
+    {
+        match self.fragment.char_indices().find(|&(_, c)| predicate(c)) {
+            Some((0,_)) => Err(Err::Error(Context::Code(*self, e))),
+            Some((i,_)) => Ok((self.slice(i..), self.slice(..i))),
+            None        => Err(Err::Incomplete(Needed::Size(1)))
+        }
     }
 }
 

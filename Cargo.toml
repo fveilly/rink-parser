@@ -4,5 +4,5 @@ version = "0.1.0"
 authors = ["Florent Veilly <florent.veilly@gmail.com>"]
 
 [dependencies]
-nom         = "4.0.0-beta1"
+nom         = "4.0.0-beta2"
 memchr      = "^1.0"
