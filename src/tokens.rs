@@ -17,8 +17,18 @@ token!(
 );
 
 token!(
-    pub MINUS: "-";
-    "The `MINUS` token.\n\nRepresent the minus operator, e.g. `x - y`."
+    pub ADD_AND_ASSIGN: "+=";
+    "The `ADD_AND_ASSIGN` token.\n\nRepresent the addition assignment operator, e.g. `x += y;`."
+);
+
+token!(
+    pub SUBSTRACT: "-";
+    "The `SUBSTRACT` token.\n\nRepresent the subtraction operator, e.g. `x - y`."
+);
+
+token!(
+    pub SUBSTRACT_AND_ASSIGN: "-=";
+    "The `SUBSTRACT_AND_ASSIGN` token.\n\nRepresent the subtraction assignment operator, e.g. `x -= y;`."
 );
 
 token!(
@@ -82,6 +92,11 @@ token!(
 );
 
 token!(
+    pub NOT_EQUAL: "!=";
+    "The `NOT_EQUAL` token.\n\nRepresent the not equal comparison operator, e.g. `x != y`."
+);
+
+token!(
     pub INLINE_COMMENT: "//";
     "THe `INLINE_COMMENT` token.\n\nRepresent an inline comment, e.g. `// comment`."
 );
@@ -94,6 +109,76 @@ token!(
 token!(
     pub BLOCK_COMMENT_CLOSE: "*/";
     "The `BLOCK_COMMENT_CLOSE` token.\n\nRepresent the end of a block comment, e.g. `/* comment */`."
+);
+
+token!(
+    pub BOOLEAN_AND: "&&";
+    "The `BOOLEAN_AND` token.\n\nRepresent the boolean conjunction operator, e.g. `x && y`."
+);
+
+token!(
+    pub BOOLEAN_NOT: "!";
+    "The `NOT` token.\n\nRepresent the boolean negation operator, e.g. `!x`."
+);
+
+token!(
+    pub BOOLEAN_OR: "||";
+    "The `BOOLEAN_OR` token.\n\nRepresent the boolean disjunction operator, e.g. `x || y`."
+);
+
+token!(
+    pub BITWISE_AND: "&";
+    "The `BITWISE_AND` token.\n\nRepresent the bitwise conjunction operator, e.g. `x & y`."
+);
+
+token!(
+    pub BITWISE_AND_AND_ASSIGN: "&=";
+    "The `BITWISE_AND_AND_ASSIGN` token.\n\nRepresent the bitwise conjunction assignment operator, e.g. `x &= y;`."
+);
+
+token!(
+    pub BITWISE_LEFT_SHIFT: "<<";
+    "The `BITWISE_LEFT_SHIFT` token.\n\nRepresent the bitwise left shift operator, e.g. `x << y`."
+);
+
+token!(
+    pub BITWISE_LEFT_SHIFT_AND_ASSIGN: "<<=";
+    "The `BITWISE_LEFT_SHIFT_AND_ASSIGN` token.\n\nRepresent the bitwise left shift assignment operator, e.g. `x <<= y;`."
+);
+
+token!(
+    pub BITWISE_NOT: "~";
+    "The `BITWISE_NOT` token.\n\nRepresent the bitwise negation operator, e.g. `~x`."
+);
+
+token!(
+    pub BITWISE_OR: "|";
+    "The `BITWISE_OR` token.\n\nRepresent the inclusive bitwise disjunction operator, e.g. `x | y`."
+);
+
+token!(
+    pub BITWISE_OR_AND_ASSIGN: "|=";
+    "The `BITWISE_OR_AND_ASSIGN` token.\n\nRepresent the inclusive bitwise disjunction assignment operator, e.g. `x |= y;`."
+);
+
+token!(
+    pub BITWISE_RIGHT_SHIFT: ">>";
+    "The `BITWISE_RIGHT_SHIFT` token.\n\nRepresent the bitwise right shift operator, e.g. `x >> y`."
+);
+
+token!(
+    pub BITWISE_RIGHT_SHIFT_AND_ASSIGN: ">>=";
+    "The `BITWISE_RIGHT_SHIFT_AND_ASSIGN` token.\n\nRepresent the bitwise right shift assignment operator, e.g. `x >>= y;`."
+);
+
+token!(
+    pub BITWISE_XOR: "^";
+    "The `BITWISE_XOR` token.\n\nRepresent the exclusive bitwise disjunction operator, e.g. `x ^ y`."
+);
+
+token!(
+    pub BITWISE_XOR_AND_ASSIGN: "^=";
+    "The `BITWISE_XOR_AND_ASSIGN` token.\n\nRepresent the exclusive bitwise disjunction assignment operator, e.g. `x ^= y;`."
 );
 
 token!(

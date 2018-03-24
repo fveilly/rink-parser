@@ -34,3 +34,121 @@ pub enum Literal<'a> {
     /// A string.
     String(Token<'a, String>)
 }
+
+/// A n-ary operation.
+#[derive(Debug, PartialEq)]
+pub enum NAryOperation<'a> {
+    /// An operation with zero operator and one operand.
+    Nullary(Box<Expression<'a>>),
+
+    /// An operation with one operator and one operand: `op x`.
+    Unary {
+        /// The operator.
+        operator: UnaryOperator,
+
+        /// The operand (`x`).
+        operand: Box<NAryOperation<'a>>
+    },
+
+    /// An operation with one operator and two operands: `x op y`.
+    Binary {
+        /// The operator.
+        operator: BinaryOperator,
+
+        /// The left operand (`x`).
+        left_operand: Box<NAryOperation<'a>>,
+
+        /// The right operand (`y`).
+        right_operand: Box<NAryOperation<'a>>
+    },
+}
+
+/// A unary operator.
+#[derive(Debug, PartialEq)]
+pub enum UnaryOperator {
+    /// Inverts all the bits (`~x`).
+    BitwiseComplement,
+
+    /// `--x`.
+    Decrement,
+
+    /// `++x`.
+    Increment,
+
+    /// `-x`.
+    Minus,
+
+    /// `!x`.
+    Negate,
+
+    /// `+x`.
+    Plus
+}
+
+/// A binary operator.
+#[derive(Debug, PartialEq)]
+pub enum BinaryOperator {
+    /// `x & y`.
+    BitwiseAnd,
+
+    /// `x | y`.
+    BitwiseOr,
+
+    /// `x << y`.
+    BitwiseShiftLeft,
+
+    /// `x >> y`.
+    BitwiseShiftRight,
+
+    /// `x ^ y`.
+    BitwiseXor,
+
+    /// `x / y`.
+    Division,
+
+    /// `x == y`.
+    Equal,
+
+    /// `x > y`.
+    GreaterThan,
+
+    /// `x >= y`.
+    GreaterThanOrEqualTo,
+
+    /// `x < y`.
+    LessThan,
+
+    /// `x <= y`.
+    LessThanOrEqualTo,
+
+    /// `x && y`.
+    LogicalAnd,
+
+    /// `x || y`.
+    LogicalOr,
+
+    /// `x - y`.
+    Subtraction,
+
+    /// `x % y`.
+    Modulo,
+
+    /// `x * y`.
+    Multiplication,
+
+    /// `x != y`.
+    NotEqual,
+
+    /// `x + y`.
+    Addition
+}
+
+/// An expression.
+#[derive(Debug, PartialEq)]
+pub enum Expression<'a> {
+    /// A literal.
+    Literal(Literal<'a>),
+
+    /// A n-ary operation.
+    NAryOperation(NAryOperation<'a>)
+}
