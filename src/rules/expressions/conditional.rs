@@ -9,7 +9,7 @@ use super::expression;
 
 named_attr!(
     #[doc="
-        Recognize all assignment expressions.
+        Recognize all conditional expressions.
     "],
     pub conditional<Span, Expression>,
     map_res!(
@@ -199,7 +199,7 @@ mod tests {
             }
         )
     }
-    
+
     macro_rules! integer {
         ($value:expr, $span:expr) => (
             Expression::Literal(Literal::Integer(Token::new($value, $span)))

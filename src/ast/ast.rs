@@ -143,6 +143,21 @@ pub enum BinaryOperator {
     Addition
 }
 
+/// A variable.
+#[derive(Debug)]
+pub struct Variable<'a>(pub Span<'a>);
+
+impl<'a> PartialEq for Variable<'a> {
+    /// This method tests for `self` and `other` values to be equal,
+    /// and is used by `==`.
+    ///
+    /// In this case, a variable is equal to another variable if their
+    /// names are equals.
+    fn eq(&self, other: &Variable<'a>) -> bool {
+        self.0.as_slice() == other.0.as_slice()
+    }
+}
+
 /// An expression.
 #[derive(Debug, PartialEq)]
 pub enum Expression<'a> {
@@ -150,5 +165,8 @@ pub enum Expression<'a> {
     Literal(Literal<'a>),
 
     /// A n-ary operation.
-    NAryOperation(NAryOperation<'a>)
+    NAryOperation(NAryOperation<'a>),
+
+    /// A variable.
+    Variable(Variable<'a>)
 }

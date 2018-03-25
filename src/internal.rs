@@ -26,6 +26,9 @@ pub enum ErrorKindExtension {
     /// The string is not correctly encoded (expect UTF-8).
     StringInvalidEncoding,
 
+    // Invalid identifier
+    Identifier
+
 }
 
 impl ErrorKindExtension {
@@ -35,6 +38,7 @@ impl ErrorKindExtension {
             ErrorKindExtension::StringTooShort                      => "String too short",
             ErrorKindExtension::StringInvalidOpeningCharacter       => "String invalid opening character",
             ErrorKindExtension::StringInvalidEncoding               => "String invalid encoding",
+            ErrorKindExtension::Identifier                          => "Invalid identifier"
         }
     }
 }

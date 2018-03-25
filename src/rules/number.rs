@@ -122,7 +122,6 @@ pub fn decimal_digit(input: Span) -> IResult<Span, Span> {
             }
         }
     }
-
 }
 
 named_attr!(
