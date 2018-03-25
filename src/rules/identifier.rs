@@ -147,30 +147,6 @@ mod tests {
     }
 
     #[test]
-    fn case_identifier_empty() {
-        let input = Span::new("\n");
-
-        assert_eq!(identifier(input), Err(Error::Error(Context::Code( Span::new_at("\n", 0, 1, 1),
-                                                                      ErrorKind::Custom(ErrorKindExtension::Identifier as u32)))));
-    }
-
-    #[test]
-    fn case_identifier_start_with_digit() {
-        let input = Span::new("5name\n");
-
-        assert_eq!(identifier(input), Err(Error::Error(Context::Code( Span::new_at("5name\n", 0, 1, 1),
-                                                                      ErrorKind::Custom(ErrorKindExtension::Identifier as u32)))));
-    }
-
-    #[test]
-    fn case_identifier_1_digit() {
-        let input = Span::new("5\n");
-
-        assert_eq!(identifier(input), Err(Error::Error(Context::Code( Span::new_at("5\n", 0, 1, 1),
-                                                                      ErrorKind::Custom(ErrorKindExtension::Identifier as u32)))));
-    }
-
-    #[test]
     fn case_identifier_special_char() {
         let input = Span::new("name.data\n");
         let output = Ok((
@@ -179,6 +155,30 @@ mod tests {
         ));
 
         assert_eq!(identifier(input), output);
+    }
+
+    #[test]
+    fn case_invalid_identifier_empty() {
+        let input = Span::new("\n");
+
+        assert_eq!(identifier(input), Err(Error::Error(Context::Code( Span::new_at("\n", 0, 1, 1),
+                                                                      ErrorKind::Custom(ErrorKindExtension::Identifier as u32)))));
+    }
+
+    #[test]
+    fn case_invalid_identifier_start_with_digit() {
+        let input = Span::new("5name\n");
+
+        assert_eq!(identifier(input), Err(Error::Error(Context::Code( Span::new_at("5name\n", 0, 1, 1),
+                                                                      ErrorKind::Custom(ErrorKindExtension::Identifier as u32)))));
+    }
+
+    #[test]
+    fn case_invalid_identifier_1_digit() {
+        let input = Span::new("5\n");
+
+        assert_eq!(identifier(input), Err(Error::Error(Context::Code( Span::new_at("5\n", 0, 1, 1),
+                                                                      ErrorKind::Custom(ErrorKindExtension::Identifier as u32)))));
     }
 
     #[test]

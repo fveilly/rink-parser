@@ -143,18 +143,23 @@ pub enum BinaryOperator {
     Addition
 }
 
+/// The variable scope.
+#[derive(Debug, PartialEq)]
+pub enum VariableScope {
+    Local,
+    Global
+}
+
 /// A variable.
 #[derive(Debug)]
-pub struct Variable<'a>(pub Span<'a>);
+pub struct Variable<'a> {
+    pub name: Span<'a>,
+    pub scope: VariableScope
+}
 
 impl<'a> PartialEq for Variable<'a> {
-    /// This method tests for `self` and `other` values to be equal,
-    /// and is used by `==`.
-    ///
-    /// In this case, a variable is equal to another variable if their
-    /// names are equals.
     fn eq(&self, other: &Variable<'a>) -> bool {
-        self.0.as_slice() == other.0.as_slice()
+        self.scope == other.scope && self.name.as_slice() == other.name.as_slice()
     }
 }
 
