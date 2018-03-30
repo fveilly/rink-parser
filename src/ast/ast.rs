@@ -154,7 +154,8 @@ pub enum VariableScope {
 #[derive(Debug)]
 pub struct Variable<'a> {
     pub name: Span<'a>,
-    pub scope: VariableScope
+    pub scope: VariableScope,
+    pub constant: bool
 }
 
 impl<'a> PartialEq for Variable<'a> {

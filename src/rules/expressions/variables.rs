@@ -21,7 +21,7 @@ named_attr!(
 
 #[inline]
 fn variable_mapper(span: Span) -> Result<Variable, ()> {
-    Ok(Variable{ name: span, scope: VariableScope::Local })
+    Ok(Variable{ name: span, scope: VariableScope::Local, constant: false })
 }
 
 named_attr!(
@@ -40,14 +40,34 @@ named_attr!(
 
 #[inline]
 fn global_variable_mapper(span: Span) -> Result<Variable, ()> {
-    Ok(Variable{ name: span, scope: VariableScope::Global })
+    Ok(Variable{ name: span, scope: VariableScope::Global, constant: false })
+}
+
+named_attr!(
+    #[doc="
+         Recognize a global constant.
+    "],
+    pub global_constant<Span, Variable>,
+    map_res!(
+        preceded!(
+            tag!(tokens::CONSTANT),
+            first!(identifier)
+        ),
+        global_constant_mapper
+    )
+);
+
+#[inline]
+fn global_constant_mapper(span: Span) -> Result<Variable, ()> {
+    Ok(Variable{ name: span, scope: VariableScope::Global, constant: true })
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
         variable,
-        global_variable
+        global_variable,
+        global_constant
     };
 
     use ast::ast::{
@@ -69,7 +89,7 @@ mod tests {
         let input  = Span::new("foo\n");
         let output = Ok((
             Span::new_at("\n", 3, 1, 4),
-            Variable{ name: Span::new_at("foo", 0, 1, 1), scope: VariableScope::Local }
+            Variable{ name: Span::new_at("foo", 0, 1, 1), scope: VariableScope::Local, constant: false }
         ));
 
         assert_eq!(variable(input), output);
@@ -80,7 +100,7 @@ mod tests {
         let input  = Span::new("VAR foo\n");
         let output = Ok((
             Span::new_at("\n", 7, 1, 8),
-            Variable{ name: Span::new_at("foo", 0, 1, 1), scope: VariableScope::Global }
+            Variable{ name: Span::new_at("foo", 0, 1, 1), scope: VariableScope::Global, constant: false }
         ));
 
         assert_eq!(global_variable(input), output);
@@ -91,9 +111,31 @@ mod tests {
         let input  = Span::new("VAR       foo\n");
         let output = Ok((
             Span::new_at("\n", 13, 1, 14),
-            Variable{ name: Span::new_at("foo", 0, 1, 1), scope: VariableScope::Global }
+            Variable{ name: Span::new_at("foo", 0, 1, 1), scope: VariableScope::Global, constant: false }
         ));
 
         assert_eq!(global_variable(input), output);
+    }
+
+    #[test]
+    fn case_global_constant() {
+        let input  = Span::new("CONST foo\n");
+        let output = Ok((
+            Span::new_at("\n", 9, 1, 10),
+            Variable{ name: Span::new_at("foo", 0, 1, 1), scope: VariableScope::Global, constant: true }
+        ));
+
+        assert_eq!(global_constant(input), output);
+    }
+
+    #[test]
+    fn case_global_constant_with_whitespace() {
+        let input  = Span::new("CONST       foo\n");
+        let output = Ok((
+            Span::new_at("\n", 15, 1, 16),
+            Variable{ name: Span::new_at("foo", 0, 1, 1), scope: VariableScope::Global, constant: true }
+        ));
+
+        assert_eq!(global_constant(input), output);
     }
 }
