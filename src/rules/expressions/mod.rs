@@ -1,11 +1,13 @@
-mod conditional;
-mod variables;
+pub mod operations;
+pub mod variables;
 
 use span::Span;
 use ast::ast::Expression;
 use rules::literals::literal;
-use self::variables::variable;
 use tokens;
+
+use self::variables::variable;
+
 use ast::ast::{
     Literal,
     Variable
@@ -18,8 +20,7 @@ named_attr!(
 pub expression<Span, Expression>,
     alt_complete!(
         variable              => { variable_mapper }
-        //| constant_access       => { constant_access_mapper }
-        | literal               => { literal_mapper }
+        | literal             => { literal_mapper }
         | preceded!(
             tag!(tokens::LEFT_PARENTHESIS),
             terminated!(
@@ -34,11 +35,6 @@ pub expression<Span, Expression>,
 fn variable_mapper(variable: Variable) -> Expression {
     Expression::Variable(variable)
 }
-
-/*#[inline]
-fn constant_access_mapper(name: Name) -> Expression {
-    Expression::Name(name)
-}*/
 
 #[inline]
 fn literal_mapper(literal: Literal) -> Expression {

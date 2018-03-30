@@ -13,12 +13,6 @@ pub fn is_identifier(chr: char) -> bool {
     chr == '_' || chr.is_alphanumeric()
 }
 
-/// Recognizes an identifier. An identifier must follow these rules:
-/// - Only Alphabets, Digits and Underscores are permitted.
-/// - Identifier name cannot start with a digit.
-/// - Key words cannot be used as a name.
-/// - Upper case and lower case letters are distinct.
-/// - Special Characters are not allowed
 pub fn parse_identifier(input: Span) -> IResult<Span, Span> {
     use nom::{
         Err,

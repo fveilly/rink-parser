@@ -143,24 +143,13 @@ pub enum BinaryOperator {
     Addition
 }
 
-/// The variable scope.
-#[derive(Debug, PartialEq)]
-pub enum VariableScope {
-    Local,
-    Global
-}
-
 /// A variable.
 #[derive(Debug)]
-pub struct Variable<'a> {
-    pub name: Span<'a>,
-    pub scope: VariableScope,
-    pub constant: bool
-}
+pub struct Variable<'a> (pub Span<'a>);
 
 impl<'a> PartialEq for Variable<'a> {
     fn eq(&self, other: &Variable<'a>) -> bool {
-        self.scope == other.scope && self.name.as_slice() == other.name.as_slice()
+        self.0.as_slice() == other.0.as_slice()
     }
 }
 
@@ -175,4 +164,11 @@ pub enum Expression<'a> {
 
     /// A variable.
     Variable(Variable<'a>)
+}
+
+/// A declaration statement.
+#[derive(Debug, PartialEq)]
+pub struct DeclarationStatement<'a> {
+    pub variable: Variable<'a>,
+    pub expression: Expression<'a>
 }

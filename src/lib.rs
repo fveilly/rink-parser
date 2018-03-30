@@ -1,3 +1,6 @@
+// Increase the macro recursion limit.
+#![recursion_limit="128"]
+
 #[macro_use]
 extern crate nom;
 
