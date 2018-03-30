@@ -1,5 +1,6 @@
 use span::Span;
 use internal::ErrorKindExtension;
+use tokens;
 
 use nom::{
     IResult,
@@ -18,7 +19,7 @@ pub fn is_identifier(chr: char) -> bool {
 /// - Key words cannot be used as a name.
 /// - Upper case and lower case letters are distinct.
 /// - Special Characters are not allowed
-pub fn identifier(input: Span) -> IResult<Span, Span> {
+pub fn parse_identifier(input: Span) -> IResult<Span, Span> {
     use nom::{
         Err,
         ErrorKind,
@@ -50,6 +51,22 @@ pub fn identifier(input: Span) -> IResult<Span, Span> {
         }
     }
 }
+
+named_attr!(
+    #[doc="
+        Recognizes an identifier. An identifier must follow these rules:
+            - Only Alphabets, Digits and Underscores are permitted.
+            - Identifier name cannot start with a digit.
+            - Key words cannot be used as a name.
+            - Upper case and lower case letters are distinct.
+            - Special Characters are not allowed
+    "],
+    pub identifier<Span, Span>,
+    preceded!(
+        not!(alt!(tag!(tokens::TRUE) | tag!(tokens::FALSE))),
+        parse_identifier
+    )
+);
 
 #[cfg(test)]
 mod tests {
@@ -182,10 +199,18 @@ mod tests {
     }
 
     #[test]
-    fn case_identifier_special_char_first() {
+    fn case_invalid_identifier_special_char_first() {
         let input = Span::new("$name\n");
 
         assert_eq!(identifier(input), Err(Error::Error(Context::Code( Span::new_at("$name\n", 0, 1, 1),
                                                                       ErrorKind::Custom(ErrorKindExtension::Identifier as u32)))));
+    }
+
+    #[test]
+    fn case_invalid_identifier_keyword_true() {
+        let input = Span::new("true\n");
+
+        assert_eq!(identifier(input), Err(Error::Error(Context::Code( Span::new_at("true\n", 0, 1, 1),
+                                                                      ErrorKind::Not))));
     }
 }

@@ -300,3 +300,13 @@ token!(
     pub LIST: "LIST";
     "The `LIST` token.\n\nRepresent a list, e.g. `LIST kettleState = cold, boiling, recently_boiled`."
 );
+
+token!(
+    pub TRUE: "true";
+    "The `TRUE` token.\n\nRepresent the boolean true."
+);
+
+token!(
+    pub FALSE: "false";
+    "The `FALSE` token.\n\nRepresent the boolean false."
+);

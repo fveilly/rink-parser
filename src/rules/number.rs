@@ -5,6 +5,7 @@ use ast::ast::{
 
 use span::Span;
 use internal::ErrorKindExtension;
+use tokens;
 
 use std::result::Result as StdResult;
 
@@ -284,7 +285,7 @@ named_attr!(
     pub boolean<Span, Literal>,
     map_res!(
         recognize!(
-            alt!(tag!("true") | tag!("false"))
+            alt!(tag!(tokens::TRUE) | tag!(tokens::FALSE))
         ),
         boolean_mapper
     )
