@@ -164,11 +164,20 @@ named!(
 
 named!(
     leaf<Span, NAryOperation>,
-    map_res!(
-        expression,
-        |expression| -> Result<NAryOperation, ()> {
-            Ok(NAryOperation::Nullary(Box::new(expression)))
-        }
+    alt_complete!(
+        map_res!(
+            expression,
+            |expression| -> Result<NAryOperation, ()> {
+                Ok(NAryOperation::Nullary(Box::new(expression)))
+            }
+        )
+        | preceded!(
+            tag!(tokens::LEFT_PARENTHESIS),
+            terminated!(
+                first!(logical),
+                first!(tag!(tokens::RIGHT_PARENTHESIS))
+            )
+        )
     )
 );
 
@@ -614,48 +623,6 @@ mod tests {
     }
 
     #[test]
-    fn case_precedence_additive_multiplicative_with_whitespace() {
-        let input  = Span::new("1   + 2 *   3\n");
-        let output = Ok((
-            Span::new_at("\n", 13, 1, 14),
-            Expression::NAryOperation(
-                binary_operation!(
-                    Addition,
-                    nullary_operation!(integer!(1, Span::new_at("1", 0, 1, 1))),
-                    binary_operation!(
-                        Multiplication,
-                        nullary_operation!(integer!(2, Span::new_at("2", 6, 1, 7))),
-                        nullary_operation!(integer!(3, Span::new_at("3", 12, 1, 13)))
-                    )
-                )
-            )
-        ));
-
-        assert_eq!(operation(input), output);
-    }
-
-    #[test]
-    fn case_precedence_additive_multiplicative_with_variables() {
-        let input  = Span::new("1 + x * y\n");
-        let output = Ok((
-            Span::new_at("\n", 9, 1, 10),
-            Expression::NAryOperation(
-                binary_operation!(
-                    Addition,
-                    nullary_operation!(integer!(1, Span::new_at("1", 0, 1, 1))),
-                    binary_operation!(
-                        Multiplication,
-                        nullary_operation!(variable!(Span::new_at("x", 4, 1, 5))),
-                        nullary_operation!(variable!(Span::new_at("y",  8, 1, 9)))
-                    )
-                )
-            )
-        ));
-
-        assert_eq!(operation(input), output);
-    }
-
-    #[test]
     fn case_precedence_logical_equality() {
         let input  = Span::new("1 == 2 || 3 != 4\n");
         let output = Ok((
@@ -698,6 +665,70 @@ mod tests {
                         nullary_operation!(integer!(3, Span::new_at("3", 9, 1, 10))),
                         nullary_operation!(integer!(4, Span::new_at("4", 13, 1, 14)))
                     )
+                )
+            )
+        ));
+
+        assert_eq!(operation(input), output);
+    }
+
+    #[test]
+    fn case_whitespace() {
+        let input  = Span::new("1   + 2 *   3\n");
+        let output = Ok((
+            Span::new_at("\n", 13, 1, 14),
+            Expression::NAryOperation(
+                binary_operation!(
+                    Addition,
+                    nullary_operation!(integer!(1, Span::new_at("1", 0, 1, 1))),
+                    binary_operation!(
+                        Multiplication,
+                        nullary_operation!(integer!(2, Span::new_at("2", 6, 1, 7))),
+                        nullary_operation!(integer!(3, Span::new_at("3", 12, 1, 13)))
+                    )
+                )
+            )
+        ));
+
+        assert_eq!(operation(input), output);
+    }
+
+    #[test]
+    fn case_variables() {
+        let input  = Span::new("1 + x * y\n");
+        let output = Ok((
+            Span::new_at("\n", 9, 1, 10),
+            Expression::NAryOperation(
+                binary_operation!(
+                    Addition,
+                    nullary_operation!(integer!(1, Span::new_at("1", 0, 1, 1))),
+                    binary_operation!(
+                        Multiplication,
+                        nullary_operation!(variable!(Span::new_at("x", 4, 1, 5))),
+                        nullary_operation!(variable!(Span::new_at("y",  8, 1, 9)))
+                    )
+                )
+            )
+        ));
+
+        assert_eq!(operation(input), output);
+    }
+
+    #[test]
+    fn case_parenthesis() {
+        let input  = Span::new("(((1 + 2) * ((3))))\n");
+        let output = Ok((
+            Span::new_at("\n", 19, 1, 20),
+            Expression::NAryOperation(
+                binary_operation!(
+                    Multiplication,
+                    binary_operation!(
+                        Addition,
+                        nullary_operation!(integer!(1, Span::new_at("1", 3, 1, 4))),
+                        nullary_operation!(integer!(2, Span::new_at("2",  7, 1, 8)))
+                    ),
+                    nullary_operation!(integer!(3, Span::new_at("3", 14, 1, 15)))
+
                 )
             )
         ));
