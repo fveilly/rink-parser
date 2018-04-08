@@ -69,10 +69,10 @@ pub enum UnaryOperator {
     /// Inverts all the bits (`~x`).
     BitwiseComplement,
 
-    /// `--x`.
+    /// `x--`.
     Decrement,
 
-    /// `++x`.
+    /// `x++`.
     Increment,
 
     /// `-x`.
@@ -144,14 +144,8 @@ pub enum BinaryOperator {
 }
 
 /// A variable.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Variable<'a> (pub Span<'a>);
-
-impl<'a> PartialEq for Variable<'a> {
-    fn eq(&self, other: &Variable<'a>) -> bool {
-        self.0.as_slice() == other.0.as_slice()
-    }
-}
 
 /// An expression.
 #[derive(Debug, PartialEq)]

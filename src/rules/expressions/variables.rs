@@ -88,7 +88,7 @@ mod tests {
         let input  = Span::new("VAR foo\n");
         let output = Ok((
             Span::new_at("\n", 7, 1, 8),
-            Variable(Span::new_at("foo", 0, 1, 1))
+            Variable(Span::new_at("foo", 4, 1, 5))
         ));
 
         assert_eq!(global_variable(input), output);
@@ -99,7 +99,7 @@ mod tests {
         let input  = Span::new("VAR       foo\n");
         let output = Ok((
             Span::new_at("\n", 13, 1, 14),
-            Variable(Span::new_at("foo", 0, 1, 1))
+            Variable(Span::new_at("foo", 10, 1, 11))
         ));
 
         assert_eq!(global_variable(input), output);
@@ -110,7 +110,7 @@ mod tests {
         let input  = Span::new("CONST foo\n");
         let output = Ok((
             Span::new_at("\n", 9, 1, 10),
-            Variable(Span::new_at("foo", 0, 1, 1))
+            Variable(Span::new_at("foo", 6, 1, 7))
         ));
 
         assert_eq!(global_constant(input), output);
@@ -121,7 +121,7 @@ mod tests {
         let input  = Span::new("CONST       foo\n");
         let output = Ok((
             Span::new_at("\n", 15, 1, 16),
-            Variable(Span::new_at("foo", 0, 1, 1))
+            Variable(Span::new_at("foo", 12, 1, 13))
         ));
 
         assert_eq!(global_constant(input), output);

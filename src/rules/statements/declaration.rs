@@ -21,23 +21,6 @@ named_attr!(
     )
 );
 
-named_attr!(
-    #[doc="
-        Recognize a return statement.
-    "],
-    pub return_statement<Span, DeclarationStatement>,
-    preceded!(
-        tag!(tokens::STATEMENT),
-        do_parse!(
-            first!(tag!(tokens::RETURN)) >>
-            variable: first!(variable) >>
-            first!(tag!(tokens::ASSIGN)) >>
-            expression: first!(operation) >>
-            (DeclarationStatement {variable: variable, expression: expression})
-        )
-    )
-);
-
 #[cfg(test)]
 mod tests {
     use super::declaration;
@@ -137,7 +120,7 @@ mod tests {
         let output = Ok((
             Span::new_at("\n", 29, 1, 30),
             DeclarationStatement {
-                variable: Variable (Span::new_at("y", 2, 1, 3)),
+                variable: Variable (Span::new_at("y", 4, 1, 5)),
                 expression: Expression::NAryOperation(
                     binary_operation!(
                         Multiplication,
@@ -206,10 +189,4 @@ mod tests {
 
         assert_eq!(declaration(input), output);
     }
-
-    // TODO: ~ fear++
-    // TODO: ~ x = lerp(2, 8, 0.3)
-    // TODO: ~ return true
-    // TODO: ~ return ((b - a) * k) + a
-    // TODO: ~ return x * exp(x, e - 1)
 }
