@@ -1,7 +1,7 @@
 use span::Span;
 use tokens;
 
-use ast::ast::DeclarationStatement;
+use ast::ast::Statement;
 use rules::expressions::variables::variable;
 use rules::expressions::operations::operation;
 
@@ -9,14 +9,14 @@ named_attr!(
     #[doc="
         Recognize a declaration statement.
     "],
-    pub declaration<Span, DeclarationStatement>,
+    pub declaration<Span, Statement>,
     preceded!(
         tag!(tokens::STATEMENT),
         do_parse!(
             variable: first!(variable) >>
             first!(tag!(tokens::ASSIGN)) >>
             expression: first!(operation) >>
-            (DeclarationStatement {variable: variable, expression: expression})
+            (Statement::Declaration(variable, expression))
         )
     )
 );
@@ -28,7 +28,7 @@ mod tests {
 
     use ast::ast::{
         Token,
-        DeclarationStatement,
+        Statement,
         Variable,
         Expression,
         Literal,
@@ -81,10 +81,10 @@ mod tests {
         let input  = Span::new("~ knows_about_wager = true\n");
         let output = Ok((
             Span::new_at("\n", 26, 1, 27),
-            DeclarationStatement {
-                variable: Variable (Span::new_at("knows_about_wager", 2, 1, 3)),
-                expression: Expression::NAryOperation(nullary_operation!(boolean!(true, Span::new_at("true", 22, 1, 23))))
-            }
+            Statement::Declaration (
+                Variable (Span::new_at("knows_about_wager", 2, 1, 3)),
+                Expression::NAryOperation(nullary_operation!(boolean!(true, Span::new_at("true", 22, 1, 23))))
+            )
         ));
 
         assert_eq!(declaration(input), output);
@@ -95,9 +95,9 @@ mod tests {
         let input  = Span::new("~ y = 2 * x * y\n");
         let output = Ok((
             Span::new_at("\n", 15, 1, 16),
-            DeclarationStatement {
-                variable: Variable (Span::new_at("y", 2, 1, 3)),
-                expression: Expression::NAryOperation(
+            Statement::Declaration (
+                Variable (Span::new_at("y", 2, 1, 3)),
+                Expression::NAryOperation(
                     binary_operation!(
                         Multiplication,
                         binary_operation!(
@@ -108,7 +108,7 @@ mod tests {
                         nullary_operation!(variable!(Span::new_at("y", 14, 1, 15)))
                     )
                 )
-            }
+            )
         ));
 
         assert_eq!(declaration(input), output);
@@ -119,9 +119,9 @@ mod tests {
         let input  = Span::new("~   y   =   2   *   x   *   y\n");
         let output = Ok((
             Span::new_at("\n", 29, 1, 30),
-            DeclarationStatement {
-                variable: Variable (Span::new_at("y", 4, 1, 5)),
-                expression: Expression::NAryOperation(
+            Statement::Declaration (
+                Variable (Span::new_at("y", 4, 1, 5)),
+                Expression::NAryOperation(
                     binary_operation!(
                         Multiplication,
                         binary_operation!(
@@ -132,7 +132,7 @@ mod tests {
                         nullary_operation!(variable!(Span::new_at("y", 28, 1, 29)))
                     )
                 )
-            }
+            )
         ));
 
         assert_eq!(declaration(input), output);
@@ -143,9 +143,9 @@ mod tests {
         let input  = Span::new("~ x = (x * x) - (y * y) + c\n");
         let output = Ok((
             Span::new_at("\n", 27, 1, 28),
-            DeclarationStatement {
-                variable: Variable (Span::new_at("x", 2, 1, 3)),
-                expression: Expression::NAryOperation(
+            Statement::Declaration (
+                Variable (Span::new_at("x", 2, 1, 3)),
+                Expression::NAryOperation(
                     binary_operation!(
                         Addition,
                         binary_operation!(
@@ -164,7 +164,7 @@ mod tests {
                         nullary_operation!(variable!(Span::new_at("c", 26, 1, 27)))
                     )
                 )
-            }
+            )
         ));
 
         assert_eq!(declaration(input), output);
@@ -175,16 +175,16 @@ mod tests {
         let input  = Span::new("~ z = 1.2 / 0.5\n");
         let output = Ok((
             Span::new_at("\n", 15, 1, 16),
-            DeclarationStatement {
-                variable: Variable (Span::new_at("z", 2, 1, 3)),
-                expression: Expression::NAryOperation(
+            Statement::Declaration (
+                Variable (Span::new_at("z", 2, 1, 3)),
+                Expression::NAryOperation(
                     binary_operation!(
                         Division,
                         nullary_operation!(real!(1.2, Span::new_at("1.2", 6, 1, 7))),
                         nullary_operation!(real!(0.5, Span::new_at("0.5", 12, 1, 13)))
                     )
                 )
-            }
+            )
         ));
 
         assert_eq!(declaration(input), output);

@@ -160,9 +160,12 @@ pub enum Expression<'a> {
     Variable(Variable<'a>)
 }
 
-/// A declaration statement.
+/// A statement.
 #[derive(Debug, PartialEq)]
-pub struct DeclarationStatement<'a> {
-    pub variable: Variable<'a>,
-    pub expression: Expression<'a>
+pub enum Statement<'a> {
+    /// A Declaration.
+    Declaration(Variable<'a>, Expression<'a>),
+
+    /// A return statement.
+    Return(Expression<'a>),
 }

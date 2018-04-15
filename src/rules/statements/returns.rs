@@ -2,22 +2,30 @@ use span::Span;
 use tokens;
 
 use ast::ast::Expression;
-use rules::expressions::variables::variable;
+use ast::ast::Statement;
 use rules::expressions::operations::operation;
 
 named_attr!(
     #[doc="
         Recognize a return statement.
     "],
-    pub return_statement<Span, Expression>,
-    preceded!(
-        tag!(tokens::STATEMENT),
+    pub return_statement<Span, Statement>,
+    map_res!(
         preceded!(
-            first!(tag!(tokens::RETURN)),
-            first!(operation)
-        )
+            tag!(tokens::STATEMENT),
+            preceded!(
+                first!(tag!(tokens::RETURN)),
+                first!(operation)
+            )
+        ),
+        return_statement_mapper
     )
 );
+
+#[inline]
+fn return_statement_mapper<'a>(expression: Expression<'a>) -> Result<Statement<'a>, ()> {
+    Ok(Statement::Return(expression))
+}
 
 #[cfg(test)]
 mod tests {
@@ -26,9 +34,9 @@ mod tests {
 
     use ast::ast::{
         Token,
-        DeclarationStatement,
         Variable,
         Expression,
+        Statement,
         Literal,
         NAryOperation,
         BinaryOperator
@@ -79,7 +87,7 @@ mod tests {
         let input = Span::new("~ return true\n");
         let output = Ok((
             Span::new_at("\n", 13, 1, 14),
-            Expression::NAryOperation(nullary!(boolean!(true, Span::new_at("true", 9, 1, 10))))
+            Statement::Return(Expression::NAryOperation(nullary!(boolean!(true, Span::new_at("true", 9, 1, 10)))))
         ));
 
         assert_eq!(return_statement(input), output);
@@ -90,7 +98,7 @@ mod tests {
         let input = Span::new("~ return ((b - a) * k) + a\n");
         let output = Ok((
             Span::new_at("\n", 26, 1, 27),
-            Expression::NAryOperation(
+            Statement::Return(Expression::NAryOperation(
                 binary!(
                     Addition,
                     binary!(
@@ -104,7 +112,7 @@ mod tests {
                     ),
                     nullary!(variable!(Span::new_at("a", 25, 1, 26)))
                 )
-            )
+            ))
         ));
 
         assert_eq!(return_statement(input), output);
